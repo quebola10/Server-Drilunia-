@@ -1,0 +1,85 @@
+# Drilunia Prometheus Configuration
+# Monitoreo de backend, servicios y métricas
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  scrape_timeout: 10s
+
+# Configuración de alertas
+rule_files:
+  - "alerts.yml"
+
+# Configuración de scrape
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # Drilunia Backend
+  - job_name: 'drilunia-backend'
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # MongoDB
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongo:27017']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # MinIO
+  - job_name: 'minio'
+    static_configs:
+      - targets: ['minio:9000']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Nginx
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx_status'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+# Configuración de almacenamiento
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 200h
+    retention.size: 1GB
+
+# Configuración de compresión
+compression:
+  enabled: true
+  algorithm: lz4
+
+# Configuración de WAL
+wal:
+  dir: /prometheus/wal
+  retention.period: 12h
+
+# Configuración de consultas
+query:
+  lookback.delta: 5m
+  max.concurrency: 20
+  timeout: 2m 
